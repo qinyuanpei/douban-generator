@@ -1,7 +1,11 @@
-from os import replace
-import re
+import sys
+import requests
+import json
 import requests
 from lxml import etree
+from utils import renderStar, createLogger
+
+logger = createLogger('books-generator')
 
 def resolve(url, timeout):
     try:
@@ -14,22 +18,8 @@ def resolve(url, timeout):
         response.raise_for_status()
         return parseContent(url, response.content)
     except Exception as e:
-        print(e)
+        logger.error(f'resolve data from {url} fails due to offline', exc_info=True)
         return None
-
-def renderStar(num):
-    if num == '1':
-        return '★☆☆☆☆ 很差';
-    elif num == '2':
-        return '★★☆☆☆ 较差';
-    elif num == '3':
-        return '★★★☆☆ 还行';
-    elif num == '4':
-        return '★★★★☆ 推荐';
-    elif num == '5':
-        return '★★★★★ 力荐';
-    else:
-       return ''
 
 def parseContent(url, content):
     html = etree.HTML(content)
@@ -83,24 +73,27 @@ def parseContent(url, content):
     }
 
 def crawl(uid, timeout=180):
-    # 在看
+    # 在玩
     playing = []
+    logger.info(f"resolve playing games for {uid}...")
     url = f'https://www.douban.com/people/{uid}/games?action=do'
     result = resolve(url, timeout)
     while result != None and result['next'] != '':
         playing.extend(result['list'])
         result = resolve(result['next'], timeout)
 
-    # 看过
+    # 玩过
     played = []
+    logger.info(f"resolve played games for {uid}...")
     url = f'https://www.douban.com/people/{uid}/games?action=collect'
     result = resolve(url, timeout)
     while result != None and result['next'] != '':
         played.extend(result['list'])
         result = resolve(result['next'], timeout)
 
-    # 想看
+    # 想玩
     wishing = []
+    logger.info(f"resolve wishing games for {uid}...")
     url = f'https://www.douban.com/people/{uid}/games?action=wish'
     result = resolve(url, timeout)
     while result != None and result['next'] != '':
@@ -114,7 +107,14 @@ def crawl(uid, timeout=180):
     }
 
 if __name__ == '__main__':
-    uid = '60029335'
-    print(crawl(uid))
+    if len(sys.argv) <= 1:
+        logger.info("a uid of douban.com is required.")
+        sys.exit(0)
+
+    uid = sys.argv[1]
+    result = crawl(uid)
+    with open('./data/games.json', 'wt', encoding='utf-8') as fp:
+         json.dump(result, fp)
+    logger.info(f"resolve games data for {uid} is done")
 
     

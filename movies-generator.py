@@ -1,5 +1,10 @@
+import sys
 import requests
+import json
 from lxml import etree
+from utils import renderStar, createLogger
+
+logger = createLogger('movies-generator')
 
 def resolve(url, timeout):
     try:
@@ -12,22 +17,8 @@ def resolve(url, timeout):
         response.raise_for_status()
         return parseContent(response.content)
     except Exception as e:
-        print(e)
+        logger.error(f'resolve data from {url} fails due to offline', exc_info=True)
         return None
-
-def renderStar(num):
-    if num == '1':
-        return '★☆☆☆☆ 很差';
-    elif num == '2':
-        return '★★☆☆☆ 较差';
-    elif num == '3':
-        return '★★★☆☆ 还行';
-    elif num == '4':
-        return '★★★★☆ 推荐';
-    elif num == '5':
-        return '★★★★★ 力荐';
-    else:
-       return ''
 
 def parseContent(content):
     html = etree.HTML(content)
@@ -80,6 +71,7 @@ def parseContent(content):
 def crawl(uid, timeout=180):
     # 在看
     watching = []
+    logger.info(f"resolve watching movies for {uid}...")
     url = f'https://movie.douban.com/people/{uid}/do'
     result = resolve(url, timeout)
     while result != None and result['next'] != '':
@@ -88,6 +80,7 @@ def crawl(uid, timeout=180):
 
     # 看过
     watched = []
+    logger.info(f"resolve watched movies for {uid}...")
     url = f'https://movie.douban.com/people/{uid}/collect'
     result = resolve(url, timeout)
     while result != None and result['next'] != '':
@@ -96,6 +89,7 @@ def crawl(uid, timeout=180):
 
     # 想看
     wishing = []
+    logger.info(f"resolve wishing movies for {uid}...")
     url = f'https://movie.douban.com/people/{uid}/wish'
     result = resolve(url, timeout)
     while result != None and result['next'] != '':
@@ -109,7 +103,14 @@ def crawl(uid, timeout=180):
     }
 
 if __name__ == '__main__':
-    uid = '60029335'
-    print(crawl(uid))
+    if len(sys.argv) <= 1:
+        logger.info("a uid of douban.com is required.")
+        sys.exit(0)
+
+    uid = sys.argv[1]
+    result = crawl(uid)
+    with open('./data/movies.json', 'wt', encoding='utf-8') as fp:
+         json.dump(result, fp)
+    logger.info(f"resolve movies data for {uid} is done")
 
     
