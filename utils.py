@@ -1,4 +1,8 @@
-import logging
+﻿import logging
+from PIL import Image
+import os
+import requests
+import json
 
 def renderStar(num):
     if num == '1':
@@ -17,3 +21,20 @@ def renderStar(num):
 def createLogger(category):
     logging.basicConfig(level = logging.INFO, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     return logging.getLogger(category)
+
+def composeImages(images, rows, columns, output='output.jpg'):
+    index = 0
+    width = int(columns * 136 * 0.75)
+    height = int(rows * 192 * 0.75)
+    newImage = Image.new('RGB', (width, height))
+    for x in range(0, columns):
+        for y in range(0, rows):
+            srcImage = Image.open(images[index])
+            srcImage = srcImage.resize((int(136 * 0.75), int(192 * 0.75)), Image.ANTIALIAS)
+            x_position = int(x * 136 * 0.75)
+            y_position = int(y * 192 * 0.75)
+            newImage.paste(srcImage, (x_position, y_position))
+            index += 1
+            if index >= len(images):
+                index = 0
+    return newImage.save(output)

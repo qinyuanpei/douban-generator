@@ -1,21 +1,28 @@
+import os
 import sys
+import time
+import shutil
 import requests
 import json
 from lxml import etree
-from utils import renderStar, createLogger
+from requests.sessions import session
+from utils import renderStar, createLogger, composeImages
+from fake_useragent import UserAgent
+from playwright.sync_api import sync_playwright
 
 logger = createLogger('books-generator')
 
-def resolve(url, timeout):
+def resolve(session, url, timeout):
     try:
         headers = {
-          'Accept': '',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0'
+          'Accept': 'text/html; charset=utf-8',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.11 TaoBrowser/2.0 Safari/536.11',
+          'Referer': 'https://book.douban.com/mine?status=wish'
         }
 
-        response = requests.get(url, timeout=timeout, headers=headers)
+        response = session.get(url, timeout=timeout, headers=headers)
         response.raise_for_status()
-        return parseContent(response.content)
+        return parseContent(response.text)
     except Exception as e:
         logger.error(f'resolve data from {url} fails due to offline', exc_info=True)
         return None
@@ -26,7 +33,7 @@ def parseContent(content):
     next = html.xpath('string(//span[@class="next"]/a/@href)')
     next = str(next)
     if next.startswith('/'):
-        next = f'https://book.douban.com{next}'
+        next = f'http://book.douban.com{next}'
 
     list = []
     for item in items:
@@ -50,14 +57,14 @@ def parseContent(content):
         comment = comment if comment != None else ''
 
         list.append({
-            title: str(title),
-            alt: str(alt),
-            image: str(image),
-            pub: str(pub),
-            updated: str(updated),
-            tags: str(tags),
-            recommend: str(recommend),
-            comment: str(comment)
+            'title': str(title),
+            'alt': str(alt),
+            'image': str(image),
+            'pub': str(pub),
+            'updated': str(updated),
+            'tags': str(tags),
+            'recommend': str(recommend),
+            'comment': str(comment)
         })
     
 
@@ -67,32 +74,34 @@ def parseContent(content):
     }
 
 def crawl(uid, timeout=180):
-    # 在读
-    reading = []
-    logger.info(f"resolve reading books for {uid}...")
-    url = f'https://book.douban.com/people/{uid}/do'
-    result = resolve(url, timeout)
-    while result != None and result['next'] != '':
-        reading.extend(result['list'])
-        result = resolve(result['next'], timeout)
+    session = requests.session()
 
     # 读过
     readed = []
     logger.info(f"resolve readed books for {uid}...")
-    url = f'https://book.douban.com/people/{uid}/collect'
-    result = resolve(url, timeout)
+    url = f'http://book.douban.com/people/{uid}/collect'
+    result = resolve(session, url, timeout)
     while result != None and result['next'] != '':
         readed.extend(result['list'])
-        result = resolve(result['next'], timeout)
+        result = resolve(session, result['next'], timeout)
+
+    # 在读
+    reading = []
+    logger.info(f"resolve reading books for {uid}...")
+    url = f'http://book.douban.com/people/{uid}/do'
+    result = resolve(session, url, timeout)
+    while result != None and result['next'] != '':
+        reading.extend(result['list'])
+        result = resolve(session, result['next'], timeout)
 
     # 想读
     wishing = []
     logger.info(f"resolve wishing books for {uid}...")
-    url = f'https://book.douban.com/people/{uid}/wish'
-    result = resolve(url, timeout)
+    url = f'http://book.douban.com/people/{uid}/wish'
+    result = resolve(session, url, timeout)
     while result != None and result['next'] != '':
         wishing.extend(result['list'])
-        result = resolve(result['next'], timeout)
+        result = resolve(session, result['next'], timeout)
     
     return {
         'reading': reading, 
@@ -100,15 +109,37 @@ def crawl(uid, timeout=180):
         'wishing': wishing
     }
 
+def merge():
+    if os.path.exists('./images'):
+        shutil.rmtree('./images')
+    else:
+        os.mkdir('./images')
+
+    movies = []
+    with open('./data/books.json','rt',encoding='utf-8') as fp:
+        data = json.load(fp)
+        movies.extend(data["wishing"])
+        movies.extend(data["reading"])
+        movies.extend(data["readed"])
+        urls = list(map(lambda x:x['image'], movies))
+        for i in range(len(urls)):
+            response = requests.get(urls[i])
+            with open(f'./images/{i}.jpg','wb') as fw:
+                fw.write(response.content)
+
+        images = []
+        for file in os.listdir('./images/'):
+            images.append(f'./images/{file}')
+
+        composeImages(images, 15, 27, './data/books.jpg')
+
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
         logger.info("a uid of douban.com is required.")
         sys.exit(0)
-
+    
     uid = sys.argv[1]
     result = crawl(uid)
     with open('./data/books.json', 'wt', encoding='utf-8') as fp:
          json.dump(result, fp)
     logger.info(f"resolve books data for {uid} is done")
-
-    

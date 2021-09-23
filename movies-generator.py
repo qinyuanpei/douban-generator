@@ -1,8 +1,10 @@
+import os
 import sys
+import shutil
 import requests
 import json
 from lxml import etree
-from utils import renderStar, createLogger
+from utils import renderStar, createLogger, composeImages
 
 logger = createLogger('movies-generator')
 
@@ -52,14 +54,14 @@ def parseContent(content):
         # image = 'https://images.weserv.nl/?url=' + image.substr(8, image.length - 8) + '&w=100'
 
         list.append({
-            title: str(title),
-            alt: str(alt),
-            image: str(image),
-            tags: str(tags),
-            date: str(date),
-            recommend: str(recommend),
-            comment: str(comment),
-            info: str(info)
+            'title': str(title),
+            'alt': str(alt),
+            'image': str(image),
+            'tags': str(tags),
+            'date': str(date),
+            'recommend': str(recommend),
+            'comment': str(comment),
+            'info': str(info)
         })
     
 
@@ -101,6 +103,29 @@ def crawl(uid, timeout=180):
         'watched': watched,
         'wishing': wishing
     }
+
+def merge():
+    if os.path.exists('./images'):
+        shutil.rmtree('./images')
+    os.mkdir('./images')
+
+    movies = []
+    with open('./data/movies.json','rt',encoding='utf-8') as fp:
+        data = json.load(fp)
+        movies.extend(data["wishing"])
+        movies.extend(data["watching"])
+        movies.extend(data["watched"])
+        urls = list(map(lambda x:x['image'], movies))
+        for i in range(len(urls)):
+            response = requests.get(urls[i])
+            with open(f'./images/{i}.jpg','wb') as fw:
+                fw.write(response.content)
+
+        images = []
+        for file in os.listdir('./images'):
+            images.append(f'./images/{file}')
+
+        composeImages(images, 15, 27,'./data/movies.jpg')
 
 if __name__ == '__main__':
     if len(sys.argv) <= 1:

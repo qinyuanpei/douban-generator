@@ -56,14 +56,14 @@ def parseContent(url, content):
         # image = 'https://images.weserv.nl/?url=' + image.substr(8, image.length - 8) + '&w=100'
 
         list.append({
-            title: str(title),
-            alt: str(alt),
-            image: str(image),
-            tags: str(tags),
-            date: str(date),
-            recommend: str(recommend),
-            comment: str(comment),
-            info: str(info)
+            'title': str(title),
+            'alt': str(alt),
+            'image': str(image),
+            'tags': str(tags),
+            'date': str(date),
+            'recommend': str(recommend),
+            'comment': str(comment),
+            'info': str(info)
         });
     
 
