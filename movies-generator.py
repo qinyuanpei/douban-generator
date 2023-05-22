@@ -5,14 +5,16 @@ import requests
 import json
 from lxml import etree
 from utils import renderStar, createLogger, composeImages
+import datetime
 
 logger = createLogger('movies-generator')
 
 def resolve(url, timeout):
     try:
         headers = {
-          'Accept': '',
-          'User-Agent': 'apifox/1.0.0 (https://www.apifox.cn)'
+          'Accept': '*/*',
+          'Cookie': 'bid=rI4j-3MlW1Q; douban-fav-remind=1; __yadk_uid=khtIPp8kVYKiRqLCQ7MPjNaiLYIDd2RG; __gads=ID=0324c8a496f7b98c-2225841fe7db0015:T=1678179359:RT=1678179359:S=ALNI_MYJF-HS-vVmg3xOzEdVpOzP4Tecog; ll="118371"; _pk_id.100001.8cb4=f0c99e807f5c962d.1678179355.; __gpi=UID=00000bd33f5d044c:T=1678179359:RT=1681880215:S=ALNI_MZJ6cZqscwbXVZC-rAFfTJ00RllVA; __utmz=30149280.1684296160.6.6.utmcsr=baidu|utmccn=(organic)|utmcmd=organic; dbcl2="60029335:TWc9E4QkC2A"; push_noty_num=0; push_doumail_num=0; __utmv=30149280.6002; ck=M_JF; _pk_ref.100001.8cb4=%5B%22%22%2C%22%22%2C1684724897%2C%22https%3A%2F%2Fwww.baidu.com%2Flink%3Furl%3D50yvXdAOGVcIozSjdrIlQHcjyL3IxboxYH8kAFmzCEqyOnnqFJ6ElkgQRMQ9FEwj%26wd%3D%26eqid%3Dd4dd0211000048a300000006646451d0%22%5D; _pk_ses.100001.8cb4=1; __utma=30149280.1478166825.1678179358.1684296160.1684724900.7; __utmc=30149280; __utmt=1; __utmb=30149280.6.10.1684724900',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.42'
         }
 
         response = requests.get(url, timeout=timeout, headers=headers)
@@ -97,11 +99,30 @@ def crawl(uid, timeout=180):
     while result != None and result['next'] != '':
         wishing.extend(result['list'])
         result = resolve(result['next'], timeout)
-    
+
+    # 统计
+    statics = [ 0 for i in  range(12)]
+    currrent = datetime.datetime.now()
+    for movie in watched:
+        updated = movie['date']
+        updated = datetime.datetime.strptime(updated, '%Y-%m-%d')
+        if updated.year == currrent.year:
+            statics[updated.month - 1] += 1
+        else:
+            continue
+    for movie in watching:
+        updated = movie['date']
+        updated = datetime.datetime.strptime(updated, '%Y-%m-%d')
+        if updated.year == currrent.year:
+            statics[updated.month - 1] += 1
+        else:
+            continue
+
     return {
         'watching': watching, 
         'watched': watched,
-        'wishing': wishing
+        'wishing': wishing,
+        'statics': statics
     }
 
 def merge():

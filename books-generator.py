@@ -9,6 +9,7 @@ from requests.sessions import session
 from utils import renderStar, createLogger, composeImages
 from fake_useragent import UserAgent
 from playwright.sync_api import sync_playwright
+import datetime
 
 logger = createLogger('books-generator')
 
@@ -102,11 +103,31 @@ def crawl(uid, timeout=180):
     while result != None and result['next'] != '':
         wishing.extend(result['list'])
         result = resolve(session, result['next'], timeout)
+
+    # 统计
+    statics = [ 0 for i in  range(12)]
+    currrent = datetime.datetime.now()
+    for book in readed:
+        updated = book['updated'][:10]
+        updated = datetime.datetime.strptime(updated, '%Y-%m-%d')
+        if updated.year == currrent.year:
+            statics[updated.month - 1] += 1
+        else:
+            continue
+    for book in reading:
+        updated = book['updated'][:10]
+        updated = datetime.datetime.strptime(updated, '%Y-%m-%d')
+        if updated.year == currrent.year:
+            statics[updated.month - 1] += 1
+        else:
+            continue
+
     
     return {
         'reading': reading, 
         'readed': readed,
-        'wishing': wishing
+        'wishing': wishing,
+        'statics': statics
     }
 
 def merge():
