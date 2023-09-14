@@ -1,9 +1,10 @@
-import sys
+import os, sys
+import shutil
 import requests
 import json
 import requests
 from lxml import etree
-from utils import renderStar, createLogger
+from utils import renderStar, createLogger, composeImages
 
 logger = createLogger('books-generator')
 
@@ -106,15 +107,37 @@ def crawl(uid, timeout=180):
         'wishing': wishing
     }
 
+def merge():
+    if os.path.exists('./images'):
+        shutil.rmtree('./images')
+    os.mkdir('./images')
+
+    movies = []
+    with open('./data/games.json','rt',encoding='utf-8') as fp:
+        data = json.load(fp)
+        movies.extend(data["wishing"])
+        movies.extend(data["playing"])
+        movies.extend(data["played"])
+        urls = list(map(lambda x:x['image'], movies))
+        for i in range(len(urls)):
+            response = requests.get(urls[i])
+            with open(f'./images/{i}.jpg','wb') as fw:
+                fw.write(response.content)
+
+        images = []
+        for file in os.listdir('./images'):
+            images.append(f'./images/{file}')
+
+        composeImages(images, 15, 27,'./data/games.jpg')
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
         logger.info("a uid of douban.com is required.")
         sys.exit(0)
 
-    uid = sys.argv[1]
-    result = crawl(uid)
-    with open('./data/games.json', 'wt', encoding='utf-8') as fp:
-         json.dump(result, fp)
-    logger.info(f"resolve games data for {uid} is done")
-
+    # uid = sys.argv[1]
+    # result = crawl(uid)
+    # with open('./data/games.json', 'wt', encoding='utf-8') as fp:
+    #      json.dump(result, fp)
+    # logger.info(f"resolve games data for {uid} is done")
+    merge()
     

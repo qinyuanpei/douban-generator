@@ -27,9 +27,13 @@ def composeImages(images, rows, columns, output='output.jpg'):
     width = int(columns * 136 * 0.75)
     height = int(rows * 192 * 0.75)
     newImage = Image.new('RGB', (width, height))
+    srcImage = None
     for x in range(0, columns):
         for y in range(0, rows):
-            srcImage = Image.open(images[index])
+            try:
+                srcImage = Image.open(images[index])
+            except Exception as e:
+                srcImage = Image.open(images[0])
             srcImage = srcImage.resize((int(136 * 0.75), int(192 * 0.75)), Image.ANTIALIAS)
             x_position = int(x * 136 * 0.75)
             y_position = int(y * 192 * 0.75)

@@ -158,9 +158,10 @@ if __name__ == '__main__':
     if len(sys.argv) <= 1:
         logger.info("a uid of douban.com is required.")
         sys.exit(0)
-    
+
     uid = sys.argv[1]
     result = crawl(uid)
     with open('./data/books.json', 'wt', encoding='utf-8') as fp:
          json.dump(result, fp)
     logger.info(f"resolve books data for {uid} is done")
+    merge()

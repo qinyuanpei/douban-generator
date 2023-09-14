@@ -13,8 +13,8 @@ def resolve(url, timeout):
     try:
         headers = {
           'Accept': '*/*',
-          'Cookie': 'bid=rI4j-3MlW1Q; douban-fav-remind=1; __yadk_uid=khtIPp8kVYKiRqLCQ7MPjNaiLYIDd2RG; __gads=ID=0324c8a496f7b98c-2225841fe7db0015:T=1678179359:RT=1678179359:S=ALNI_MYJF-HS-vVmg3xOzEdVpOzP4Tecog; ll="118371"; _pk_id.100001.8cb4=f0c99e807f5c962d.1678179355.; __gpi=UID=00000bd33f5d044c:T=1678179359:RT=1681880215:S=ALNI_MZJ6cZqscwbXVZC-rAFfTJ00RllVA; __utmz=30149280.1684296160.6.6.utmcsr=baidu|utmccn=(organic)|utmcmd=organic; dbcl2="60029335:TWc9E4QkC2A"; push_noty_num=0; push_doumail_num=0; __utmv=30149280.6002; ck=M_JF; _pk_ref.100001.8cb4=%5B%22%22%2C%22%22%2C1684724897%2C%22https%3A%2F%2Fwww.baidu.com%2Flink%3Furl%3D50yvXdAOGVcIozSjdrIlQHcjyL3IxboxYH8kAFmzCEqyOnnqFJ6ElkgQRMQ9FEwj%26wd%3D%26eqid%3Dd4dd0211000048a300000006646451d0%22%5D; _pk_ses.100001.8cb4=1; __utma=30149280.1478166825.1678179358.1684296160.1684724900.7; __utmc=30149280; __utmt=1; __utmb=30149280.6.10.1684724900',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.42'
+          'Cookie': 'bid=yWp-BWCU5QE; dbcl2="60029335:nfTLxNRvjfM"; push_noty_num=0; push_doumail_num=0; __utma=30149280.877824136.1693788912.1694401825.1694670246.4; __utmz=30149280.1694670246.4.3.utmcsr=accounts.douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/; __utmv=30149280.6002; ck=hb8a; ap_v=0,6.0; __utmb=30149280.5.10.1694670246; __utmc=30149280; __gads=ID=5865881b86059a47-22fb884ccce30022:T=1694670404:RT=1694670766:S=ALNI_Mb7aSCWzR6eswJxcuKNF7ewSVCmyQ; __gpi=UID=00000d929d3ff0c3:T=1694670404:RT=1694670766:S=ALNI_MbauFz6G2dSGCykKKV9QrK9G1VEJg; frodotk_db="f36356891bdfe508da2a039b539faf18"',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0'
         }
 
         response = requests.get(url, timeout=timeout, headers=headers)
@@ -26,7 +26,7 @@ def resolve(url, timeout):
 
 def parseContent(content):
     html = etree.HTML(content)
-    items = html.xpath('//div[@class="grid-view"]/div[@class="item"]')
+    items = html.xpath('//div[@class="grid-view"]/div[@class="item comment-item"]')
     next = html.xpath('string(//span[@class="next"]/a/@href)')
     next = str(next)
     if next.startswith('/'):
@@ -37,7 +37,7 @@ def parseContent(content):
         parser = etree.HTML(etree.tostring(item, pretty_print=True))
         title = parser.xpath('string(//li[@class="title"]/a/em)')
         alt = parser.xpath('string(//li[@class="title"]/a/@href)')
-        image = parser.xpath('string(//div[@class="item"]/div[@class="pic"]/a/img/@src)').replace('ipst', 'spst')
+        image = parser.xpath('string(//div[@class="item comment-item"]/div[@class="pic"]/a/img/@src)').replace('ipst', 'spst')
 
         tags = parser.xpath('string(//li/span[@class="tags"])')
         tags = str(tags)[0:3] if str(tags) != None  else ''
@@ -158,5 +158,7 @@ if __name__ == '__main__':
     with open('./data/movies.json', 'wt', encoding='utf-8') as fp:
          json.dump(result, fp)
     logger.info(f"resolve movies data for {uid} is done")
+
+    merge()
 
     
