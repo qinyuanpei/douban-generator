@@ -6,7 +6,7 @@ import requests
 import json
 from lxml import etree
 from requests.sessions import session
-from utils import renderStar, createLogger, composeImages
+from utils import renderStar, createLogger, composeImages, trim
 from fake_useragent import UserAgent
 from playwright.sync_api import sync_playwright
 import datetime
@@ -49,6 +49,7 @@ def parseContent(content):
         
         tags = parser.xpath('string(//span[@class="tags"])')
         tags = str(tags)
+        print(tags)
         tags = tags[3] if tags != '' and len(tags) > 3 else ''
 
         recommend = parser.xpath('string(//div[@class="short-note"]/div/span[contains(@class,"rating")]/@class)')
@@ -61,7 +62,7 @@ def parseContent(content):
             'title': str(title),
             'alt': str(alt),
             'image': str(image),
-            'pub': str(pub),
+            'pub': trim(str(pub)),
             'updated': str(updated),
             'tags': str(tags),
             'recommend': str(recommend),
@@ -91,9 +92,12 @@ def crawl(uid, timeout=180):
     logger.info(f"resolve reading books for {uid}...")
     url = f'http://book.douban.com/people/{uid}/do'
     result = resolve(session, url, timeout)
+    if (result['next'] == ''):
+        reading.extend(result['list'])
     while result != None and result['next'] != '':
         reading.extend(result['list'])
         result = resolve(session, result['next'], timeout)
+    print(reading)
 
     # 想读
     wishing = []

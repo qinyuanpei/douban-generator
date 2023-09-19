@@ -4,6 +4,12 @@ import os
 import requests
 import json
 
+def trim(str):
+    if (str == None):
+        return None
+    
+    return '/'.join(list(map(lambda x:x.strip(), str.split('/'))))
+
 def renderStar(num):
     if num == '1':
         return '★☆☆☆☆ 很差';

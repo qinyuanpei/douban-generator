@@ -4,7 +4,7 @@ import shutil
 import requests
 import json
 from lxml import etree
-from utils import renderStar, createLogger, composeImages
+from utils import renderStar, createLogger, composeImages, trim
 import datetime
 
 logger = createLogger('movies-generator')
@@ -56,14 +56,14 @@ def parseContent(content):
         # image = 'https://images.weserv.nl/?url=' + image.substr(8, image.length - 8) + '&w=100'
 
         list.append({
-            'title': str(title),
+            'title': trim(str(title)),
             'alt': str(alt),
             'image': str(image),
             'tags': str(tags),
             'date': str(date),
             'recommend': str(recommend),
             'comment': str(comment),
-            'info': str(info)
+            'info': trim(str(info))
         })
     
 
@@ -124,6 +124,9 @@ def crawl(uid, timeout=180):
         'wishing': wishing,
         'statics': statics
     }
+
+
+    
 
 def merge():
     if os.path.exists('./images'):
